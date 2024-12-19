@@ -1,0 +1,36 @@
+image: atlassian/default-image:3
+
+definitions:
+  steps:
+  - step: &docker-build
+    name: docker build
+    services:
+      - docker
+    script:
+      # Set $IMAGE_NAME, $DOCKER_REGISTRY $DOCKER_USERNAME and $DOCKER_PASSWORD as environment variables in repository settings
+      # build the Docker image (this will use the Dockerfile in the root of the repo)
+      - docker build -t $IMAGE_NAME
+      # authenticate with the Docker Hub registry
+      - docker login $DOCKER_REGISTRY --username $DOCKER_USERNAME --password $DOCKER_PASSWORD
+      - docker tag $IMAGE_NAME $GDN_TRIVY_TARGET:V$BITBUCKET_BUILD_NUMBER
+      - docker tag $IMAGE_NAME $GDN_TRIVY_TARGET:latest
+      # push the new Docker image to the Docker registry
+      - docker push --all-tags $GDN_TRIVY_TARGET
+
+  - step: &trivy-scan
+    name: Trivy Scan
+    services: 
+      - docker
+    script:
+      - docker login $DOCKER_REGISTRY --username $DOCKER_USERNAME --password $DOCKER_PASSWORD
+      - curl -L -o ./dfd-cli.zip https://www.nuget.org/api/v2/package/Microsoft.Security.DevOps.Cli.linux-x64/
+      - unzip -o ./dfd-cli.zip
+      - chmod +x tools/guardian
+      - chmod +x tools/Microsoft.Guardian.Cli
+      - tools/guardian init --force
+      - tools/guardian run -t trivy --export-file ./ubuntu-test.sarif --publish-file-folder-path ./ubuntu-test.sarif --not-break-on-detections
+
+pipelines:
+  default:
+    - step: *docker-build
+    - step: *trivy-scan
