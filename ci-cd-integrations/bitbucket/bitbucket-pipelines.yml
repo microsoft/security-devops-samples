@@ -1,3 +1,15 @@
+# The following ENV vars must be set:
+# - DOCKER_REGISTRY
+# - DOCKER_USERNAME
+# - DOCKER_PASSWORD
+# - GDN_MDC_CLI_TENANT_ID
+# - GDN_MDC_CLI_CLIENT_ID
+# - GDN_MDC_CLI_CLIENT_SECRET
+# - GDN_PIPELINE (bitbucket)
+# - IMAGE_NAME
+# - GDN_TRIVY_ACTION (image)
+# - GDN_TRIVY_TARGET
+
 image: atlassian/default-image:3
 
 definitions:
@@ -7,7 +19,6 @@ definitions:
     services:
       - docker
     script:
-      # Set $IMAGE_NAME, $DOCKER_REGISTRY $DOCKER_USERNAME and $DOCKER_PASSWORD as environment variables in repository settings
       # build the Docker image (this will use the Dockerfile in the root of the repo)
       - docker build -t $IMAGE_NAME
       # authenticate with the Docker Hub registry
@@ -23,8 +34,8 @@ definitions:
       - docker
     script:
       - docker login $DOCKER_REGISTRY --username $DOCKER_USERNAME --password $DOCKER_PASSWORD
-      - curl -L -o ./dfd-cli.zip https://www.nuget.org/api/v2/package/Microsoft.Security.DevOps.Cli.linux-x64/
-      - unzip -o ./dfd-cli.zip
+      - curl -L -o ./dfc-cli.zip https://www.nuget.org/api/v2/package/Microsoft.Security.DevOps.Cli.linux-x64/
+      - unzip -o ./dfc-cli.zip
       - chmod +x tools/guardian
       - chmod +x tools/Microsoft.Guardian.Cli
       - tools/guardian init --force
