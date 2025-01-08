@@ -1,6 +1,6 @@
 # Defender for Cloud Command Line Interface (CLI)
 
-Defender for Cloud Command Line Interface (CLI) is an application you can use in continuous integration and continuous deployment (CI/CD) pipelines. It runs static analysis tools and connects code to cloud services. You can use Defender for Cloud CLI in any build process to scan images for security vulnerabilities with built-in security scanners. It sends the scan results to the Defender for Cloud portal. The Cloud Security Explorer can then access the container image and its vulnerabilities.
+Defender for Cloud Command Line Interface (CLI) is a tool designed for continuous integration and continuous deployment (CI/CD) pipelines. It performs static analysis and connects your code to cloud services. You can use it in any build process to scan container images for security vulnerabilities using built-in scanners. The results are sent to the Defender for Cloud portal, where the Cloud Security Explorer provides access to the container image and details about its vulnerabilities.
 
 [For more detailed information](https://learn.microsoft.com/en-us/azure/defender-for-cloud/cli-cicd-integration)
 
