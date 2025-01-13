@@ -8,7 +8,7 @@
 # - GDN_PIPELINE (bitbucket)
 # - IMAGE_NAME
 # - GDN_TRIVY_ACTION (image)
-# - GDN_TRIVY_TARGET
+# - GDN_TRIVY_TARGET                     <- should match the IMAGE_NAME
 
 image: atlassian/default-image:3
 
