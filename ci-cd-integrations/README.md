@@ -7,7 +7,7 @@ Defender for Cloud Command Line Interface (CLI) is a tool designed for continuou
 * Authenticates with Microsoft Defender for Cloud
 * Installs the latest Microsoft and 3rd party security tools
 * Normalized processing of results into the SARIF format
-* Uploads results to Microsoft Defender for CLoud
+* Uploads results to Microsoft Defender for Cloud
 
 ## Required enviornment variables for all Pipelines
 
