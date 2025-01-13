@@ -9,26 +9,26 @@ Defender for Cloud Command Line Interface (CLI) is a tool designed for continuou
 * Normalized processing of results into the SARIF format
 * Uploads results to Microsoft Defender for Cloud
 
-## Required enviornment variables for all Pipelines
+## Required environment variables for all Pipelines
 
 | Name | Value |
 | --- | --- | 
-| GDN_MDC_CLI_TENANT_ID | MDC Tenant ID |
-| GDN_MDC_CLI_CLIENT_ID | MDC CLient ID |
-| GDN_MDC_CLI_CLIENT_SECRET | MDC Client Secret |
-| GDN_MDC_CLI_TENANT_ID | MDC Tenant ID |
-| GDN_PIPELINENAME | jenkins, bitbucket |
+| GDN_MDC_CLI_TENANT_ID | `<MDC Tenant ID>` |
+| GDN_MDC_CLI_CLIENT_ID | `<MDC Client ID>` |
+| GDN_MDC_CLI_CLIENT_SECRET | `<MDC Client Secret>` |
+| GDN_MDC_CLI_TENANT_ID | `<MDC Tenant ID>` |
+| GDN_PIPELINENAME | jenkins \| bitbucket |
 
 ## Running Trivy
 
 To run Trivy, you must first build the container. In your CI/CD tooling, add the following enviornment variables
 
-Additional Enviornment Variables
+Additional Environment Variables
 
 | Name | Value |
 | --- | --- |
 | GDN_TRIVY_ACTION | image |
-| GDN_TRIVY_TARGET | image name |
+| GDN_TRIVY_TARGET | `<image name>` |
 
 ## Trademarks
 
