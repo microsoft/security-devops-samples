@@ -2,11 +2,11 @@ pipeline {
     agent any
     environment {
         GDN_MDC_CLI_TENANT_ID=""                    // <-- Input MDC Tenant ID
-        GDN_MDC_CLI_CLIENT_ID=""                    // <-- Input MDC CLient ID
+        GDN_MDC_CLI_CLIENT_ID=""                    // <-- Input MDC Client ID
         GDN_MDC_CLI_CLIENT_SECRET=""                // <-- Input MDC Client Secret
         GDN_PIPELINENAME="jenkins"
         GDN_TRIVY_ACTION="image"
-        GDN_TRIVY_TARGET="cli_jenkins_image"        // should match the IMAGE_NAME
+        GDN_TRIVY_TARGET="cli_jenkins_image"        // <-- should match the IMAGE_NAME
         DOCKER_REGISTRY="docker.io"
         DOCKER_USERNAME=""                          // <-- Input Docker username
         DOCKER_PASSWORD=""                          // <-- Input Docker password
