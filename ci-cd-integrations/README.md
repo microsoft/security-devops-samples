@@ -13,7 +13,6 @@ Defender for Cloud Command Line Interface (CLI) is a tool designed for continuou
 
 | Name | Value |
 | --- | --- | 
-| GDN_MDC_CLI_TENANT_ID | `<MDC Tenant ID>` |
 | GDN_MDC_CLI_CLIENT_ID | `<MDC Client ID>` |
 | GDN_MDC_CLI_CLIENT_SECRET | `<MDC Client Secret>` |
 | GDN_MDC_CLI_TENANT_ID | `<MDC Tenant ID>` |
