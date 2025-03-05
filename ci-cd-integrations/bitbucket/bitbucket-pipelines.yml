@@ -2,13 +2,13 @@
 # - DOCKER_REGISTRY
 # - DOCKER_USERNAME
 # - DOCKER_PASSWORD
-# - GDN_MDC_CLI_TENANT_ID
-# - GDN_MDC_CLI_CLIENT_ID
-# - GDN_MDC_CLI_CLIENT_SECRET
-# - GDN_PIPELINE (bitbucket)
-# - IMAGE_NAME
-# - GDN_TRIVY_ACTION (image)
-# - GDN_TRIVY_TARGET                     <- should match the IMAGE_NAME
+# - GDN_MDC_CLI_TENANT_ID                <-- https://learn.microsoft.com/en-us/azure/defender-for-cloud/cli-cicd-integration#retrieve-the-api-token
+# - GDN_MDC_CLI_CLIENT_ID                <-- https://learn.microsoft.com/en-us/azure/defender-for-cloud/cli-cicd-integration#retrieve-the-api-token
+# - GDN_MDC_CLI_CLIENT_SECRET            <-- https://learn.microsoft.com/en-us/azure/defender-for-cloud/cli-cicd-integration#retrieve-the-api-token
+# - GDN_PIPELINE                         <-- bitbucket
+# - IMAGE_NAME                           <-- should match the GDN_TRIVY_TARGET
+# - GDN_TRIVY_ACTION                     <-- image
+# - GDN_TRIVY_TARGET                     <-- should match the IMAGE_NAME
 
 image: atlassian/default-image:3
 
@@ -20,7 +20,7 @@ definitions:
       - docker
     script:
       # build the Docker image (this will use the Dockerfile in the root of the repo)
-      - docker build -t $IMAGE_NAME
+      - docker build -t $IMAGE_NAME .
       # authenticate with the Docker Hub registry
       - docker login $DOCKER_REGISTRY --username $DOCKER_USERNAME --password $DOCKER_PASSWORD
       - docker tag $IMAGE_NAME $GDN_TRIVY_TARGET:V$BITBUCKET_BUILD_NUMBER
