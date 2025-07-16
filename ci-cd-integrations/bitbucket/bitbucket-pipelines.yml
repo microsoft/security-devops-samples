@@ -1,47 +1,85 @@
-# The following ENV vars must be set:
-# - DOCKER_REGISTRY
-# - DOCKER_USERNAME
-# - DOCKER_PASSWORD
-# - GDN_MDC_CLI_TENANT_ID                <-- https://learn.microsoft.com/en-us/azure/defender-for-cloud/cli-cicd-integration#retrieve-the-api-token
-# - GDN_MDC_CLI_CLIENT_ID                <-- https://learn.microsoft.com/en-us/azure/defender-for-cloud/cli-cicd-integration#retrieve-the-api-token
-# - GDN_MDC_CLI_CLIENT_SECRET            <-- https://learn.microsoft.com/en-us/azure/defender-for-cloud/cli-cicd-integration#retrieve-the-api-token
-# - GDN_PIPELINE                         <-- bitbucket
-# - IMAGE_NAME                           <-- should match the GDN_TRIVY_TARGET
-# - GDN_TRIVY_ACTION                     <-- image
-# - GDN_TRIVY_TARGET                     <-- should match the IMAGE_NAME
+# ===================================================================
+# Bitbucket Pipelines configuration for Docker image build + scan
+#
+# Required Repository‑Level Environment Variables
+# (set them in Repo → Settings → Pipelines → Environment variables)
+# --------------------------------------------------
+# • MDC_TENANT_ID        – Microsoft Defender tenant ID
+# • MDC_CLIENT_ID        – Defender App Registration (Client ID)
+# • MDC_CLIENT_SECRET    – Defender client secret
+# • REGISTRY_USERNAME    – Azure Container Registry (ACR) username
+# • REGISTRY_PASSWORD    – ACR password or access token
+# ===================================================================
 
-image: atlassian/default-image:3
+image: docker:20.10.24          # Alpine image with Docker client
+
+options:
+  docker: true                  # enable remote Docker daemon
 
 definitions:
-  steps:
-  - step: &docker-build
-    name: docker build
-    services:
-      - docker
-    script:
-      # build the Docker image (this will use the Dockerfile in the root of the repo)
-      - docker build -t $IMAGE_NAME .
-      # authenticate with the Docker Hub registry
-      - docker login $DOCKER_REGISTRY --username $DOCKER_USERNAME --password $DOCKER_PASSWORD
-      - docker tag $IMAGE_NAME $GDN_TRIVY_TARGET:V$BITBUCKET_BUILD_NUMBER
-      - docker tag $IMAGE_NAME $GDN_TRIVY_TARGET:latest
-      # push the new Docker image to the Docker registry
-      - docker push --all-tags $GDN_TRIVY_TARGET
-
-  - step: &trivy-scan
-    name: Trivy Scan
-    services: 
-      - docker
-    script:
-      - docker login $DOCKER_REGISTRY --username $DOCKER_USERNAME --password $DOCKER_PASSWORD
-      - curl -L -o ./dfc-cli.zip https://www.nuget.org/api/v2/package/Microsoft.Security.DevOps.Cli.linux-x64/
-      - unzip -o ./dfc-cli.zip
-      - chmod +x tools/guardian
-      - chmod +x tools/Microsoft.Guardian.Cli
-      - tools/guardian init --force
-      - tools/guardian run -t trivy --export-file ./ubuntu-test.sarif --publish-file-folder-path ./ubuntu-test.sarif --not-break-on-detections
+  caches:
+    defender-cli: ~/.cache/defender
 
 pipelines:
   default:
-    - step: *docker-build
-    - step: *trivy-scan
+    - step:
+        name: Build, scan & push
+        services:
+          - docker
+        caches:
+          - defender-cli
+        script:
+          # ────────────────────────────────────────────────────────────
+          # ❶ COMMON VARIABLES
+          # ────────────────────────────────────────────────────────────
+          - export REGISTRY="reg.azurecr.io"
+          - export IMAGE_NAME="cli_jenkins_image"
+          - export COMMIT=$(git rev-parse --short HEAD)
+          - export IMG_TAG="${BITBUCKET_BUILD_NUMBER}-${COMMIT}"
+          - export FULL_IMAGE="${REGISTRY}/${IMAGE_NAME}"
+
+          # ────────────────────────────────────────────────────────────
+          # ❷ BUILD & PUSH IMAGE
+          # ────────────────────────────────────────────────────────────
+          - echo "$REGISTRY_PASSWORD" | \
+              docker login "$REGISTRY" -u "$REGISTRY_USERNAME" --password-stdin
+
+          - docker build -t "${FULL_IMAGE}:${IMG_TAG}" -t "${FULL_IMAGE}:latest" .
+
+          - docker push "${FULL_IMAGE}:${IMG_TAG}"
+          - if [ "$BITBUCKET_BRANCH" = "main" ]; then
+                docker push "${FULL_IMAGE}:latest";
+            fi
+
+          # ────────────────────────────────────────────────────────────
+          # ❸ INSTALL (or RESTORE) DEFENDER FOR CLOUD CLI
+          # ────────────────────────────────────────────────────────────
+          - |
+            if [ ! -x ~/.cache/defender/defender ]; then
+              mkdir -p ~/.cache/defender
+              curl -sSL -o msdo_linux.zip \
+                   "https://www.nuget.org/api/v2/package/Microsoft.Security.DevOps.Cli.linux-x64/"
+              unzip -oq msdo_linux.zip
+              mv tools/* ~/.cache/defender/
+              chmod +x ~/.cache/defender/defender \
+                       ~/.cache/defender/Microsoft.Guardian.Cli
+            fi
+          - export PATH="$PATH:$HOME/.cache/defender"
+
+          # ────────────────────────────────────────────────────────────
+          # ❹ RUN TRIVY SCAN & PUBLISH SARIF
+          # ────────────────────────────────────────────────────────────
+          - guardian init --force
+          - guardian run \
+              -t trivy \
+              --image "${FULL_IMAGE}:${IMG_TAG}" \
+              --export-file ./security-scan.sarif \
+              --publish-file ./security-scan.sarif \
+              --not-break-on-detections
+
+        artifacts:
+          - security-scan.sarif
+
+definitions:
+  services:
+    docker: {}                  # use Bitbucket’s default Docker service settings
