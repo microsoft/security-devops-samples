@@ -13,10 +13,10 @@ Defender for Cloud Command Line Interface (CLI) is a tool designed for continuou
 
 | Name | Value |
 | --- | --- | 
-| GDN_MDC_CLI_CLIENT_ID | `<MDC Client ID>` |
-| GDN_MDC_CLI_CLIENT_SECRET | `<MDC Client Secret>` |
-| GDN_MDC_CLI_TENANT_ID | `<MDC Tenant ID>` |
-| GDN_PIPELINENAME | jenkins \| bitbucket |
+| GDN_MDC_CLI_CLIENT_ID | Generated MDC Client ID |
+| GDN_MDC_CLI_CLIENT_SECRET | Generated Client Secret |
+| GDN_MDC_CLI_TENANT_ID | Azure AD Tenant ID  |
+| GDN_PIPELINENAME | `bitbucket` `jenkins` `gcp` `bamboo` `circle` `travis` `teamcity` `oci` or `aws` |
 
 ## Running Trivy
 
