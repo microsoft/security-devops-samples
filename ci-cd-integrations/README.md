@@ -26,8 +26,8 @@ Additional Environment Variables
 
 | Name | Value |
 | --- | --- |
-| GDN_TRIVY_ACTION | image |
-| GDN_TRIVY_TARGET | `<image name>` |
+| GDN_TRIVY_ACTION | `image` |
+| GDN_TRIVY_TARGET | Name of image |
 
 ## Trademarks
 
