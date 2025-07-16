@@ -1,59 +1,81 @@
 pipeline {
     agent any
     environment {
-        GDN_MDC_CLI_TENANT_ID=""                    // <-- Input MDC Tenant ID
-        GDN_MDC_CLI_CLIENT_ID=""                    // <-- Input MDC Client ID
-        GDN_MDC_CLI_CLIENT_SECRET=""                // <-- Input MDC Client Secret
-        GDN_PIPELINENAME="jenkins"
-        GDN_TRIVY_ACTION="image"
-        GDN_TRIVY_TARGET="cli_jenkins_image"        // <-- should match the IMAGE_NAME
-        DOCKER_REGISTRY="docker.io"
-        DOCKER_USERNAME=""                          // <-- Input Docker username
-        DOCKER_PASSWORD=""                          // <-- Input Docker password
-        IMAGE_NAME="cli_jenkins_image"
+        /* Defender for Cloud (Microsoft Security DevOps) */
+        GDN_MDC_CLI_TENANT_ID     = credentials('MDC-TenantID')           
+        GDN_MDC_CLI_CLIENT_ID     = credentials('MDC-CLI-ID')            
+        GDN_MDC_CLI_CLIENT_SECRET = credentials('MDC-CLI-Secret')    
+        GDN_PIPELINENAME          = "jenkins"
+        GDN_TRIVY_ACTION          = "image"
+
+        /* Registry details */
+        REGISTRY        = "reg.azurecr.io"
+        IMAGE_NAME      = "cli_jenkins_image"
+        REGISTRY_CREDS  = credentials('Registry-Creds')          
     }
     stages {  
-        stage('Clone') {
+        stage('Checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/org/repo'   // <-- Input GitHub repository
+            }
+        }
+        
+        stage('Build & Push Container') {
             steps {
                 script {
-                    node {
-                        echo 'Cloning Repository...'
-                        // Clone the GitHub repository
-                        git branch: 'main', url: 'https://github.com/org/repo'
-                    }
+                    def commit  = env.GIT_COMMIT?.take(7) ?: 'unk'
+                    def fullImg = "${env.REGISTRY}/${env.IMAGE_NAME}"
+                    def verTag  = "${BUILD_NUMBER}-${commit}"
+        
+                    sh """
+                        set -euo pipefail
+                        docker build -t ${fullImg}:${verTag} -t ${fullImg}:latest .
+        
+                        echo "\${REGISTRY_CREDS_PSW}" | \
+                            docker login ${env.REGISTRY} -u "\${REGISTRY_CREDS_USR}" --password-stdin
+        
+                        docker push ${fullImg}:${verTag}
+                        if [ "\${BRANCH_NAME:-}" = "main" ]; then docker push ${fullImg}:latest; fi
+                    """
+        
+                    env.GDN_TRIVY_TARGET = fullImg
+                    env.IMAGE_TAG        = verTag
                 }
             }
         }
-        stage('Build Docker Container') {
+        
+        stage ('Scan with Trivy & Publish to MDC') {
             steps {
                 script {
-                    node {
-                        echo 'Building Docker Container...'
-                        // Build the Docker container
-                        sh '''
-                          docker build -t ${IMAGE_NAME} .
-                          docker login ${DOCKER_REGISTRY} --username ${DOCKER_USERNAME} --password ${DOCKER_PASSWORD}
-                          docker tag ${IMAGE_NAME} ${GDN_TRIVY_TARGET}:V${BUILD_NUMBER}
-                          docker tag ${IMAGE_NAME} ${GDN_TRIVY_TARGET}:latest
-                          docker push ${GDN_TRIVY_TARGET}:V${BUILD_NUMBER}
-                        '''
-                    }
+                    sh '''
+                        set -euo pipefail
+                        # Download the tool only if it isn’t cached on this agent
+                        if [ ! -x tools/guardian ]; then
+                          curl -sSL -o msdo_linux.zip \
+                             "https://www.nuget.org/api/v2/package/Microsoft.Security.DevOps.Cli.linux-x64/"
+                          unzip -oq msdo_linux.zip
+                          chmod +x tools/guardian tools/Microsoft.Guardian.Cli
+                        fi
+
+                        tools/guardian init --force
+                        tools/guardian run \
+                            -t trivy \
+                            --image ${GDN_TRIVY_TARGET}:${IMAGE_TAG} \
+                            --export-file ./security-scan.sarif \
+                            --publish-file ./security-scan.sarif \
+                            --not-break-on-detections
+                    '''
                 }
             }
         }
-        stage ('Run Trivy & Upload') {
-            steps {
-                script {
-                    node {
-                        sh 'curl -L -o ./msdo_linux.zip "https://www.nuget.org/api/v2/package/Microsoft.Security.DevOps.Cli.linux-x64/"'
-                        sh 'unzip -o ./msdo_linux.zip'
-                        sh 'chmod +x tools/guardian'
-                        sh 'chmod +x tools/Microsoft.Guardian.Cli'
-                        sh 'tools/guardian init --force'
-                        sh 'tools/guardian run -t trivy --export-file ./ubuntu-test.sarif --publish-file-folder-path ./ubuntu-test.sarif --not-break-on-detections'
-                    }
-                }
-            }
+    }
+    
+    post {
+        success {
+            archiveArtifacts artifacts: 'security-scan.sarif', fingerprint: true
         }
+        always { 
+            cleanWs()  // keep agent disk tidy
+        }  
     }
 }
