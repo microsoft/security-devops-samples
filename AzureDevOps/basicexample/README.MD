@@ -1,0 +1,1 @@
+This is a basic example which simply runs all tools.  You will need to install the MicrosoftSecurityDevOps extension in your organization.  A successful run of this pipeline should reveal security flaws in the file badarm.json.
